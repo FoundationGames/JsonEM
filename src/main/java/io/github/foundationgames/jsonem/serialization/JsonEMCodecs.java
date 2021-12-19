@@ -32,13 +32,11 @@ public class JsonEMCodecs {
 
     public static final Codec<ModelTransform> MODEL_TRANSFORM = RecordCodecBuilder.create((instance) ->
             instance.group(
-                    Codec.FLOAT.optionalFieldOf("origin_x", 0f).forGetter(obj -> obj.pivotX),
-                    Codec.FLOAT.optionalFieldOf("origin_y", 0f).forGetter(obj -> obj.pivotY),
-                    Codec.FLOAT.optionalFieldOf("origin_z", 0f).forGetter(obj -> obj.pivotZ),
+                    Vec3f.CODEC.optionalFieldOf("origin", Vec3f.ZERO).forGetter(obj -> new Vec3f(obj.pivotX, obj.pivotY, obj.pivotZ)),
                     Codec.FLOAT.optionalFieldOf("pitch", 0f).forGetter(obj -> obj.pitch),
                     Codec.FLOAT.optionalFieldOf("yaw", 0f).forGetter(obj -> obj.yaw),
                     Codec.FLOAT.optionalFieldOf("roll", 0f).forGetter(obj -> obj.roll)
-            ).apply(instance, ModelTransform::of)
+            ).apply(instance, (origin, p, y, r) -> ModelTransform.of(origin.getX(), origin.getY(), origin.getZ(), p, y, r))
     );
 
     public static final Codec<Dilation> DILATION = RecordCodecBuilder.create((instance) ->
@@ -58,6 +56,8 @@ public class JsonEMCodecs {
         return ModelCuboidDataAccess.jsonem$create(name.orElse(null), uv.getX(), uv.getY(), offset.getX(), offset.getY(), offset.getZ(), dimensions.getX(), dimensions.getY(), dimensions.getZ(), dilation, mirror, uvSize.getX(), uvSize.getY());
     }
 
+    private static final Vector2f DEFAULT_UV_SCALE = new Vector2f(1f, 1f);
+
     public static final Codec<ModelCuboidData> MODEL_CUBOID_DATA = RecordCodecBuilder.create((instance) ->
             instance.group(
                     Codec.STRING.optionalFieldOf("name").forGetter(obj -> Optional.ofNullable(((ModelCuboidDataAccess) (Object) obj).jsonem$name())),
@@ -66,7 +66,7 @@ public class JsonEMCodecs {
                     DILATION.optionalFieldOf("dilation", Dilation.NONE).forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$dilation()),
                     Codec.BOOL.optionalFieldOf("mirror", false).forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$mirror()),
                     VECTOR2F.fieldOf("uv").forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$uv()),
-                    VECTOR2F.fieldOf("uv_size").forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$uvSize())
+                    VECTOR2F.optionalFieldOf("uv_scale", DEFAULT_UV_SCALE).forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$uvScale())
             ).apply(instance, JsonEMCodecs::createCuboidData)
     );
 

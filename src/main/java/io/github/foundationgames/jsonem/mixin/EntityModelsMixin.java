@@ -19,7 +19,7 @@ import java.util.Map;
 public class EntityModelsMixin {
     @Inject(method = "getModels", at = @At(value = "INVOKE", target = "Lcom/google/common/collect/ImmutableMap$Builder;build()Lcom/google/common/collect/ImmutableMap;"), locals = LocalCapture.CAPTURE_FAILSOFT)
     private static void jsonem$dumpModels(CallbackInfoReturnable<Map<EntityModelLayer, TexturedModelData>> cir, ImmutableMap.Builder<EntityModelLayer, TexturedModelData> builder) {
-        if (JsonEM.DUMP_MODELS) {
+        if ("true".equals(JsonEM.CONFIG.values.getProperty("dump_models"))) {
             builder.build().forEach((layer, data) -> {
                 try {
                     JsonEntityModelUtil.dump(layer, data);
