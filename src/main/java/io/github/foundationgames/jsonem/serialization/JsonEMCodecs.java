@@ -1,0 +1,99 @@
+package io.github.foundationgames.jsonem.serialization;
+
+import com.google.common.collect.ImmutableList;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import io.github.foundationgames.jsonem.mixin.DilationAccess;
+import io.github.foundationgames.jsonem.mixin.ModelCuboidDataAccess;
+import io.github.foundationgames.jsonem.mixin.ModelPartDataAccess;
+import io.github.foundationgames.jsonem.mixin.TextureDimensionsAccess;
+import io.github.foundationgames.jsonem.mixin.TexturedModelDataAccess;
+import net.minecraft.client.model.Dilation;
+import net.minecraft.client.model.ModelCuboidData;
+import net.minecraft.client.model.ModelData;
+import net.minecraft.client.model.ModelPartData;
+import net.minecraft.client.model.ModelTransform;
+import net.minecraft.client.model.TextureDimensions;
+import net.minecraft.client.model.TexturedModelData;
+import net.minecraft.client.util.math.Vector2f;
+import net.minecraft.util.Util;
+import net.minecraft.util.math.Vec3f;
+
+import java.util.HashMap;
+import java.util.Optional;
+
+public class JsonEMCodecs {
+    public static final Codec<TextureDimensions> TEXTURE_DIMENSIONS = RecordCodecBuilder.create((instance) ->
+        instance.group(
+                Codec.INT.fieldOf("width").forGetter(obj -> ((TextureDimensionsAccess) obj).jsonem$width()),
+                Codec.INT.fieldOf("height").forGetter(obj -> ((TextureDimensionsAccess) obj).jsonem$height())
+        ).apply(instance, TextureDimensions::new)
+    );
+
+    public static final Codec<ModelTransform> MODEL_TRANSFORM = RecordCodecBuilder.create((instance) ->
+            instance.group(
+                    Codec.FLOAT.optionalFieldOf("origin_x", 0f).forGetter(obj -> obj.pivotX),
+                    Codec.FLOAT.optionalFieldOf("origin_y", 0f).forGetter(obj -> obj.pivotY),
+                    Codec.FLOAT.optionalFieldOf("origin_z", 0f).forGetter(obj -> obj.pivotZ),
+                    Codec.FLOAT.optionalFieldOf("pitch", 0f).forGetter(obj -> obj.pitch),
+                    Codec.FLOAT.optionalFieldOf("yaw", 0f).forGetter(obj -> obj.yaw),
+                    Codec.FLOAT.optionalFieldOf("roll", 0f).forGetter(obj -> obj.roll)
+            ).apply(instance, ModelTransform::of)
+    );
+
+    public static final Codec<Dilation> DILATION = RecordCodecBuilder.create((instance) ->
+            instance.group(
+                    Codec.FLOAT.fieldOf("radius_x").forGetter(obj -> ((DilationAccess) obj).jsonem$radiusX()),
+                    Codec.FLOAT.fieldOf("radius_y").forGetter(obj -> ((DilationAccess) obj).jsonem$radiusY()),
+                    Codec.FLOAT.fieldOf("radius_z").forGetter(obj -> ((DilationAccess) obj).jsonem$radiusZ())
+            ).apply(instance, Dilation::new)
+    );
+
+    public static final Codec<Vector2f> VECTOR2F = Codec.FLOAT.listOf().comapFlatMap((vec) ->
+            Util.toArray(vec, 2).map((arr) -> new Vector2f(arr.get(0), arr.get(1))),
+            (vec) -> ImmutableList.of(vec.getX(), vec.getY())
+    );
+
+    private static ModelCuboidData createCuboidData(Optional<String> name, Vec3f offset, Vec3f dimensions, Dilation dilation, boolean mirror, Vector2f uv, Vector2f uvSize) {
+        return ModelCuboidDataAccess.jsonem$create(name.orElse(null), uv.getX(), uv.getY(), offset.getX(), offset.getY(), offset.getZ(), dimensions.getX(), dimensions.getY(), dimensions.getZ(), dilation, mirror, uvSize.getX(), uvSize.getY());
+    }
+
+    public static final Codec<ModelCuboidData> MODEL_CUBOID_DATA = RecordCodecBuilder.create((instance) ->
+            instance.group(
+                    Codec.STRING.optionalFieldOf("name").forGetter(obj -> Optional.ofNullable(((ModelCuboidDataAccess) (Object) obj).jsonem$name())),
+                    Vec3f.CODEC.fieldOf("offset").forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$offset()),
+                    Vec3f.CODEC.fieldOf("dimensions").forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$dimensions()),
+                    DILATION.optionalFieldOf("dilation", Dilation.NONE).forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$dilation()),
+                    Codec.BOOL.optionalFieldOf("mirror", false).forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$mirror()),
+                    VECTOR2F.fieldOf("uv").forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$uv()),
+                    VECTOR2F.fieldOf("uv_size").forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$uvSize())
+            ).apply(instance, JsonEMCodecs::createCuboidData)
+    );
+
+    private static Codec<ModelPartData> createPartDataCodec() {
+        return RecordCodecBuilder.create((instance) ->
+                instance.group(
+                        MODEL_TRANSFORM.optionalFieldOf("transform", ModelTransform.NONE).forGetter(obj -> ((ModelPartDataAccess) obj).jsonem$transform()),
+                        Codec.list(MODEL_CUBOID_DATA).fieldOf("cuboids").forGetter(obj -> ((ModelPartDataAccess) obj).jsonem$cuboids()),
+                        LazyTypeUnboundedMapCodec.of(Codec.STRING, JsonEMCodecs::createPartDataCodec).optionalFieldOf("children", new HashMap<>()).forGetter(obj -> ((ModelPartDataAccess) obj).jsonem$children())
+                ).apply(instance, (transform, cuboids, children) -> {
+                    var data = ModelPartDataAccess.create(cuboids, transform);
+                    ((ModelPartDataAccess) data).jsonem$children().putAll(children);
+                    return data;
+                })
+        );
+    }
+
+    public static final Codec<ModelPartData> MODEL_PART_DATA = createPartDataCodec();
+
+    public static final Codec<TexturedModelData> TEXTURED_MODEL_DATA = RecordCodecBuilder.create((instance) ->
+            instance.group(
+                    TEXTURE_DIMENSIONS.fieldOf("texture").forGetter(obj -> ((TexturedModelDataAccess) obj).jsonem$texture()),
+                    Codec.unboundedMap(Codec.STRING, MODEL_PART_DATA).fieldOf("bones").forGetter(obj -> ((ModelPartDataAccess) ((TexturedModelDataAccess) obj).jsonem$root().getRoot()).jsonem$children())
+            ).apply(instance, (texture, bones) -> {
+                var data = new ModelData();
+                ((ModelPartDataAccess) data.getRoot()).jsonem$children().putAll(bones);
+                return TexturedModelDataAccess.create(data, texture);
+            })
+    );
+}

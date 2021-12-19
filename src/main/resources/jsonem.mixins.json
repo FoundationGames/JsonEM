@@ -1,0 +1,20 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "io.github.foundationgames.jsonem.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "client": [
+    "DilationAccess",
+    "EntityModelsMixin",
+    "ModelCuboidDataAccess",
+    "ModelPartDataAccess",
+    "TextureDimensionsAccess",
+    "TexturedModelDataAccess"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "mixins": [
+    "EntityModelLoaderMixin"
+  ]
+}

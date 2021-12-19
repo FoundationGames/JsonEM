@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "jsonem",
+  "version": "${version}",
+
+  "name": "JsonEM",
+  "description": "Json Entity Models",
+  "authors": [
+    "FoundationGames"
+  ],
+  "contact": {
+    "homepage": "",
+    "sources": ""
+  },
+
+  "license": "MIT",
+  "icon": "assets/jsonem/icon.png",
+
+  "environment": "*",
+  "entrypoints": {
+    "client": [
+      "io.github.foundationgames.jsonem.JsonEM"
+    ]
+  },
+  "mixins": [
+    "jsonem.mixins.json"
+  ],
+
+  "depends": {
+    "fabricloader": ">=0.11.3",
+    "fabric": "*",
+    "minecraft": "1.18.x",
+    "java": ">=17"
+  }
+}
