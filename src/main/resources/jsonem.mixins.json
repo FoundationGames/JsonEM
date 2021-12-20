@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_17",
   "client": [
     "DilationAccess",
+    "EntityModelLoaderMixin",
     "EntityModelsMixin",
     "ModelCuboidDataAccess",
     "ModelPartDataAccess",
@@ -13,8 +14,5 @@
   ],
   "injectors": {
     "defaultRequire": 1
-  },
-  "mixins": [
-    "EntityModelLoaderMixin"
-  ]
+  }
 }
