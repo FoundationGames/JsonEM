@@ -14,7 +14,7 @@ If you'd like to dump json versions of all entity models (vanilla or modded) so 
 
 ### Edit Models in Blockbench:
 To edit models in [Blockbench](https://www.blockbench.net/), install the plugin located in this repository.
-- Download the file `jsonem_models.js` from this GitHub repository
+- [Download](https://github.com/FoundationGames/JsonEM/raw/1.18/jsonem_models.js) the file `jsonem_models.js` from this GitHub repository
 - In Blockbench, navigate to `File > Plugins`, and at the top of the dialog click the icon for `Load Plugin from File`. Choose the `jsonem_models.js` file.
 - Navigate to `File > New` and choose `JsonEM Java Entity Model` to begin editing.
 - You can also `File > Open Model` to import a JsonEM json model file, such as those dumped from the game.
@@ -28,7 +28,14 @@ JsonEM can be used to create TexturedModelData for your entities entirely using 
 This guide will demonstrate how to make the model for the **cube entity** in [**this tutorial**](https://fabricmc.net/wiki/tutorial:entity) with json.
 - Include the mod as follows:
 ```gradle
-TBD
+repositories {
+	maven { url "https://api.modrinth.com/maven" }
+}
+dependencies {
+    // Replace <version> with desired version
+    modImplementation "maven.modrinth:jsonem:<version>"
+    include "maven.modrinth:jsonem:<version>"
+}
 ```
 - Register the entity model layer for your entity through JsonEM instead of Fabric API (Excludes the need for a code-generated TexturedModelData)
 ```java
