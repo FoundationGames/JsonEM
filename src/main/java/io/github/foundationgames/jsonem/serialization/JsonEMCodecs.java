@@ -33,10 +33,8 @@ public class JsonEMCodecs {
     public static final Codec<ModelTransform> MODEL_TRANSFORM = RecordCodecBuilder.create((instance) ->
             instance.group(
                     Vec3f.CODEC.optionalFieldOf("origin", Vec3f.ZERO).forGetter(obj -> new Vec3f(obj.pivotX, obj.pivotY, obj.pivotZ)),
-                    Codec.FLOAT.optionalFieldOf("pitch", 0f).forGetter(obj -> obj.pitch),
-                    Codec.FLOAT.optionalFieldOf("yaw", 0f).forGetter(obj -> obj.yaw),
-                    Codec.FLOAT.optionalFieldOf("roll", 0f).forGetter(obj -> obj.roll)
-            ).apply(instance, (origin, p, y, r) -> ModelTransform.of(origin.getX(), origin.getY(), origin.getZ(), p, y, r))
+                    Vec3f.CODEC.optionalFieldOf("rotation", Vec3f.ZERO).forGetter(obj -> new Vec3f(obj.pitch, obj.yaw, obj.roll))
+            ).apply(instance, (origin, rot) -> ModelTransform.of(origin.getX(), origin.getY(), origin.getZ(), rot.getX(), rot.getY(), rot.getZ()))
     );
 
     public static final Codec<Dilation> DILATION = RecordCodecBuilder.create((instance) ->
@@ -56,7 +54,7 @@ public class JsonEMCodecs {
         return ModelCuboidDataAccess.jsonem$create(name.orElse(null), uv.getX(), uv.getY(), offset.getX(), offset.getY(), offset.getZ(), dimensions.getX(), dimensions.getY(), dimensions.getZ(), dilation, mirror, uvSize.getX(), uvSize.getY());
     }
 
-    private static final Vector2f DEFAULT_UV_SCALE = new Vector2f(1f, 1f);
+    private static final Vector2f DEFAULT_UV_SCALE = new Vector2f(1.0f, 1.0f);
 
     public static final Codec<ModelCuboidData> MODEL_CUBOID_DATA = RecordCodecBuilder.create((instance) ->
             instance.group(

@@ -3,14 +3,21 @@
 Library for **modders**, **resource pack makers**, and **modpack makers** to create and edit entity models **WITH JSON** <br/>
 *Does not work with OptiFine format!*
 
-### Generate Vanilla/Mods' Entity Models:
-If you'd like to dump json-ified versions of all entity models (vanilla or modded) so that you can edit them easily with resource packs or use them as examples, here's how: 
+### Generate Reference Entity Models:
+If you'd like to dump json versions of all entity models (vanilla or modded) so that you can edit them easily with resource packs or use them as examples, here's how: 
 <br/>
 - Launch the game, and then open the configuration file located at `.minecraft/config/jsonem.properties`.
 - Edit the second line of the file to be `dump_models=true`.
 - Re-launch the game. Navigate to the folder `.minecraft/jsonem_dump`.
 - Within this folder you should find all registered entity models dumped as json, formatted like a resource pack.
 - Use this format when editing or adding models with a resource pack.
+
+### Edit Models in Blockbench:
+To edit models in [Blockbench](https://www.blockbench.net/), install the plugin located in this repository.
+- Download the file `jsonem_models.js` from this GitHub repository
+- In Blockbench, navigate to `File > Plugins`, and at the top of the dialog click the icon for `Load Plugin from File`. Choose the `jsonem_models.js` file.
+- Navigate to `File > New` and choose `JsonEM Java Entity Model` to begin editing.
+- You can also `File > Open Model` to import a JsonEM json model file, such as those dumped from the game.
 
 ### For Resource Pack/Modpack Makers:
 - Complete the steps above to dump all entity models from your game or modpack.

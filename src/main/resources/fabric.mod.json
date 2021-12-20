@@ -9,8 +9,8 @@
     "FoundationGames"
   ],
   "contact": {
-    "homepage": "",
-    "sources": ""
+    "homepage": "https://github.com/FoundationGames/JsonEM",
+    "sources": "https://github.com/FoundationGames/JsonEM"
   },
 
   "license": "MIT",
@@ -29,7 +29,7 @@
   "depends": {
     "fabricloader": ">=0.11.3",
     "fabric": "*",
-    "minecraft": "1.18.x",
+    "minecraft": "*",
     "java": ">=17"
   }
 }
