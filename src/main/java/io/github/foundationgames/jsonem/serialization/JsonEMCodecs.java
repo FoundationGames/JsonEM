@@ -8,6 +8,7 @@ import io.github.foundationgames.jsonem.mixin.ModelCuboidDataAccess;
 import io.github.foundationgames.jsonem.mixin.ModelPartDataAccess;
 import io.github.foundationgames.jsonem.mixin.TextureDimensionsAccess;
 import io.github.foundationgames.jsonem.mixin.TexturedModelDataAccess;
+import io.github.foundationgames.jsonem.util.Vector2fComparable;
 import net.minecraft.client.model.Dilation;
 import net.minecraft.client.model.ModelCuboidData;
 import net.minecraft.client.model.ModelData;
@@ -37,16 +38,16 @@ public class JsonEMCodecs {
             ).apply(instance, (origin, rot) -> ModelTransform.of(origin.getX(), origin.getY(), origin.getZ(), rot.getX(), rot.getY(), rot.getZ()))
     );
 
-    public static final Codec<Dilation> DILATION = RecordCodecBuilder.create((instance) ->
-            instance.group(
-                    Codec.FLOAT.fieldOf("radius_x").forGetter(obj -> ((DilationAccess) obj).jsonem$radiusX()),
-                    Codec.FLOAT.fieldOf("radius_y").forGetter(obj -> ((DilationAccess) obj).jsonem$radiusY()),
-                    Codec.FLOAT.fieldOf("radius_z").forGetter(obj -> ((DilationAccess) obj).jsonem$radiusZ())
-            ).apply(instance, Dilation::new)
+    public static final Codec<Dilation> DILATION = Vec3f.CODEC.xmap(
+            vec -> new Dilation(vec.getX(), vec.getY(), vec.getZ()),
+            dil -> new Vec3f(
+                    ((DilationAccess) dil).jsonem$radiusX(),
+                    ((DilationAccess) dil).jsonem$radiusY(),
+                    ((DilationAccess) dil).jsonem$radiusZ())
     );
 
     public static final Codec<Vector2f> VECTOR2F = Codec.FLOAT.listOf().comapFlatMap((vec) ->
-            Util.toArray(vec, 2).map((arr) -> new Vector2f(arr.get(0), arr.get(1))),
+            Util.toArray(vec, 2).map((arr) -> new Vector2fComparable(arr.get(0), arr.get(1))),
             (vec) -> ImmutableList.of(vec.getX(), vec.getY())
     );
 
@@ -54,7 +55,7 @@ public class JsonEMCodecs {
         return ModelCuboidDataAccess.jsonem$create(name.orElse(null), uv.getX(), uv.getY(), offset.getX(), offset.getY(), offset.getZ(), dimensions.getX(), dimensions.getY(), dimensions.getZ(), dilation, mirror, uvSize.getX(), uvSize.getY());
     }
 
-    private static final Vector2f DEFAULT_UV_SCALE = new Vector2f(1.0f, 1.0f);
+    private static final Vector2f DEFAULT_UV_SCALE = new Vector2fComparable(1.0f, 1.0f);
 
     public static final Codec<ModelCuboidData> MODEL_CUBOID_DATA = RecordCodecBuilder.create((instance) ->
             instance.group(
@@ -64,7 +65,7 @@ public class JsonEMCodecs {
                     DILATION.optionalFieldOf("dilation", Dilation.NONE).forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$dilation()),
                     Codec.BOOL.optionalFieldOf("mirror", false).forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$mirror()),
                     VECTOR2F.fieldOf("uv").forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$uv()),
-                    VECTOR2F.optionalFieldOf("uv_scale", DEFAULT_UV_SCALE).forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$uvScale())
+                    VECTOR2F.optionalFieldOf("uv_scale", DEFAULT_UV_SCALE).forGetter(obj -> Vector2fComparable.of(((ModelCuboidDataAccess)(Object)obj).jsonem$uvScale()))
             ).apply(instance, JsonEMCodecs::createCuboidData)
     );
 

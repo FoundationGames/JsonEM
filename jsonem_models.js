@@ -8,8 +8,8 @@ const CODEC = new Codec("jsonem_entity", {
     },
     extension: "json",
     remember: true,
-    parse(model, path) {
-        JSON.stringify(model); // This makes it work for some reason don't question
+    load(model, file) {
+        console.log(`Opening Model: ${JSON.stringify(model)}`)
 
         let texture = model["texture"];
         let bones = model["bones"];
@@ -35,7 +35,7 @@ const CODEC = new Codec("jsonem_entity", {
             }
         }
 
-        console.log(JSON.stringify(compiled))
+        console.log(`Exporting Model: ${JSON.stringify(compiled)}`)
 
         return JSON.stringify(compiled, null, 4);
     },
@@ -58,7 +58,7 @@ const FORMAT = new ModelFormat({
     single_texture: true,
     bone_rig: true,
     centered_grid: true,
-    rotate_cubes: true,
+    rotate_cubes: false,
     integer_size: false,
     locators: false,
     canvas_limit: false,
@@ -80,7 +80,7 @@ Plugin.register("jsonem_models", {
     author: "FoundationGames",
     description: "Create models to be used with https://github.com/FoundationGames/JsonEM",
     icon: "icon-format_java",
-    version: "1.0",
+    version: "1.1",
     variant: "both"
 })
 
@@ -97,21 +97,21 @@ function isZero(vec) {
     return true;
 }
 
-function addBone(parent, origin, key, bone) {
+function addBone(parent, pOrigin, key, bone) {
     let gopts = {name: key, children: []};
 
+    let origin = pOrigin;
     if ("transform" in bone) {
         if ("origin" in bone.transform) {
             let bor = bone.transform.origin;
             origin = [origin[0] + bor[0], origin[1] + bor[1], origin[2] + bor[2]];
-
-            gopts.origin = flipY(origin);
         }
         if ("rotation" in bone.transform) {
             let rot = bone.transform.rotation;
             gopts.rotation = [-Math.radToDeg(rot[0]), Math.radToDeg(rot[1]), -Math.radToDeg(rot[2])];
         }
     }
+    gopts.origin = flipY(origin);
 
     let group = new Group(gopts);
 
@@ -128,7 +128,7 @@ function addBone(parent, origin, key, bone) {
             copts.name = cuboid["name"];
         }
         if ("dilation" in cuboid) {
-            copts.inflate = cuboid["dilation"];
+            copts.inflate = cuboid["dilation"][0];
         }
         if ("mirror" in cuboid) {
             copts.mirror_uv = cuboid["mirror"];
@@ -146,15 +146,22 @@ function addBone(parent, origin, key, bone) {
     }
 
     for (ckey in bone["children"]) {
-        addBone(group, origin, ckey, bone["children"][ckey]);
+        addBone(group, origin, ckey, bone.children[ckey]);
     }
 }
 
 function compileBone(bone) {
     let compiled = {};
 
-
     let origin = flipY(bone.origin);
+    let cNode = bone;
+    while ("parent" in cNode && cNode.parent.origin !== undefined) {
+        let pOrigin = flipY(cNode.parent.origin);
+        origin = [origin[0] - pOrigin[0], origin[1] - pOrigin[1], origin[2] - pOrigin[2]];
+        cNode = cNode.parent
+    }
+
+    //let cOff = [origin[0] + pOrigin[0], origin[1] + pOrigin[1], origin[2] + pOrigin[2]];
     if (!isZero(origin)) {
         if (!("transform" in compiled)) compiled.transform = {};
         compiled.transform.origin = origin;
@@ -172,9 +179,17 @@ function compileBone(bone) {
     let children = {}
     for (node of bone.children) {
         if (node instanceof Group) {
+            if (node.parent !== bone) {
+                continue;
+            }
+
             children[node.name] = compileBone(node);
         }
         if (node instanceof Cube) {
+            if (node.parent !== bone) {
+                continue;
+            }
+
             let cuboid = {}
 
             if (node.name !== "cube") {
@@ -184,7 +199,8 @@ function compileBone(bone) {
             let to = node.to;
             let from = node.from;
             let size = [to[0] - from[0], to[1] - from[1], to[2] - from[2]];
-            cuboid.offset = flipY([from[0], from[1] + size[1], from[2]]);
+            let pos = flipY([from[0], from[1] + size[1], from[2]]);
+            cuboid.offset = [pos[0] - origin[0], pos[1] - origin[1], pos[2] - origin[2]];
             cuboid.dimensions = size;
             cuboid.uv = node.uv_offset;
 
@@ -192,13 +208,13 @@ function compileBone(bone) {
                 cuboid.mirror = true;
             }
             if (node.inflate > 0) {
-                cuboid.dilation = node.inflate;
+                cuboid.dilation = [node.inflate, node.inflate, node.inflate];
             }
             
             compiled.cuboids.push(cuboid);
         }
     }
-    if (bone.children.length > 0) {
+    if (children != {}) {
         compiled.children = children;
     }
 
