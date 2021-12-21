@@ -27,7 +27,7 @@ To edit models in [Blockbench](https://www.blockbench.net/), install the plugin 
 ### For Modders:
 JsonEM can be used to create TexturedModelData for your entities entirely using json. <br/>
 This guide will demonstrate how to make the model for the **cube entity** in [**this tutorial**](https://fabricmc.net/wiki/tutorial:entity) with json.
-- Include the mod as follows:
+- Include the mod as follows (versions can be found [here](https://modrinth.com/mod/jsonem/versions)):
 ```gradle
 repositories {
 	maven { url "https://api.modrinth.com/maven" }

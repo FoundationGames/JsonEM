@@ -8,7 +8,7 @@ const CODEC = new Codec("jsonem_entity", {
     },
     extension: "json",
     remember: true,
-    parse(model, path) {
+    load(model, file) {
         //console.log(`Opening Model: ${JSON.stringify(model)}`)
 
         let texture = model.texture;
