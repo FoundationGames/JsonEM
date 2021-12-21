@@ -8,14 +8,14 @@ const CODEC = new Codec("jsonem_entity", {
     },
     extension: "json",
     remember: true,
-    load(model, file) {
-        console.log(`Opening Model: ${JSON.stringify(model)}`)
+    parse(model, path) {
+        //console.log(`Opening Model: ${JSON.stringify(model)}`)
 
-        let texture = model["texture"];
-        let bones = model["bones"];
+        let texture = model.texture;
+        let bones = model.bones;
 
-        Project.texture_width = texture["width"];
-        Project.texture_height = texture["height"];
+        Project.texture_width = texture.width;
+        Project.texture_height = texture.height;
 
         for (key in bones) {
             addBone(undefined, [0, 0, 0], key, bones[key]);
@@ -35,7 +35,7 @@ const CODEC = new Codec("jsonem_entity", {
             }
         }
 
-        console.log(`Exporting Model: ${JSON.stringify(compiled)}`)
+        //console.log(`Exporting Model: ${JSON.stringify(compiled)}`)
 
         return JSON.stringify(compiled, null, 4);
     },
@@ -71,7 +71,6 @@ const FORMAT = new ModelFormat({
     },
     onDeactivation() {
         CODEC.export_action.delete();
-        CODEC.delete();
     }
 })
 
@@ -80,7 +79,7 @@ Plugin.register("jsonem_models", {
     author: "FoundationGames",
     description: "Create models to be used with https://github.com/FoundationGames/JsonEM",
     icon: "icon-format_java",
-    version: "1.1",
+    version: "1.2",
     variant: "both"
 })
 
@@ -125,27 +124,27 @@ function addBone(parent, pOrigin, key, bone) {
         let copts = {name: "cube"};
 
         if ("name" in cuboid) {
-            copts.name = cuboid["name"];
+            copts.name = cuboid.name;
         }
         if ("dilation" in cuboid) {
-            copts.inflate = cuboid["dilation"][0];
+            copts.inflate = cuboid.dilation[0];
         }
         if ("mirror" in cuboid) {
-            copts.mirror_uv = cuboid["mirror"];
+            copts.mirror_uv = cuboid.mirror;
         }
         
-        let pos = cuboid["offset"];
+        let pos = cuboid.offset;
         pos = [pos[0] + origin[0], pos[1] + origin[1], pos[2] + origin[2]]
-        let size = cuboid["dimensions"];
+        let size = cuboid.dimensions;
         copts.from = flipY([pos[0], pos[1] + size[1], pos[2]]);
         copts.to = flipY([pos[0] + size[0], pos[1], pos[2] + size[2]]);
 
-        copts.uv_offset = cuboid["uv"];
+        copts.uv_offset = cuboid.uv;
 
         new Cube(copts).addTo(group).init();
     }
 
-    for (ckey in bone["children"]) {
+    for (ckey in bone.children) {
         addBone(group, origin, ckey, bone.children[ckey]);
     }
 }
