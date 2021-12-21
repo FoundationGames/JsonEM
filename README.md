@@ -18,6 +18,7 @@ To edit models in [Blockbench](https://www.blockbench.net/), install the plugin 
 - In Blockbench, navigate to `File > Plugins`, and at the top of the dialog click the icon for `Load Plugin from File`. Choose the `jsonem_models.js` file.
 - Navigate to `File > New` and choose `JsonEM Java Entity Model` to begin editing.
 - You can also `File > Open Model` to import a JsonEM json model file, such as those dumped from the game.
+- To **export** your model for use with JsonEM, navigate to `File > Export > Export JsonEM Java Entity Model` and save the file.
 
 ### For Resource Pack/Modpack Makers:
 - Complete the steps above to dump all entity models from your game or modpack.
@@ -41,11 +42,11 @@ dependencies {
 ```java
 void onInitializeClient() {
     [...]
-    JsonEM.registerModelLayer(MODEL_CUBE_LAYER);
+    JsonEM.registerModelLayer(MODEL_CUBE_LAYER); // Layer ID: "entitytesting:cube", Layer name: "main"
 }
 ```
 - Add a model file to your mod resources containing your entity's model data <br/>
-**EX:** `assets/my_mod/models/entity/my_entity/layer.json`
+**EX:** `assets/entitytesting/models/entity/cube/main.json`
 ```json
 {
     "texture": {
