@@ -31,7 +31,7 @@ const CODEC = new Codec("jsonem_entity", {
         compiled.bones = {};
         for (node of Outliner.root) {
             if (node instanceof Group) {
-                compiled.bones[node.name] = compileBone(node);
+                compiled.bones[node.name] = compileBone(node, [0, 0, 0]);
             }
         }
 
@@ -79,7 +79,7 @@ Plugin.register("jsonem_models", {
     author: "FoundationGames",
     description: "Create models to be used with https://github.com/FoundationGames/JsonEM",
     icon: "icon-format_java",
-    version: "1.2",
+    version: "1.3",
     variant: "both"
 })
 
@@ -149,18 +149,12 @@ function addBone(parent, pOrigin, key, bone) {
     }
 }
 
-function compileBone(bone) {
+function compileBone(bone, pOrigin) {
     let compiled = {};
 
-    let origin = flipY(bone.origin);
-    let cNode = bone;
-    while ("parent" in cNode && cNode.parent.origin !== undefined) {
-        let pOrigin = flipY(cNode.parent.origin);
-        origin = [origin[0] - pOrigin[0], origin[1] - pOrigin[1], origin[2] - pOrigin[2]];
-        cNode = cNode.parent
-    }
+    let bOrigin = flipY(bone.origin); // bone origin
+    let origin = [bOrigin[0] - pOrigin[0], bOrigin[1] - pOrigin[1], bOrigin[2] - pOrigin[2]]; // origin to write to json
 
-    //let cOff = [origin[0] + pOrigin[0], origin[1] + pOrigin[1], origin[2] + pOrigin[2]];
     if (!isZero(origin)) {
         if (!("transform" in compiled)) compiled.transform = {};
         compiled.transform.origin = origin;
@@ -182,7 +176,7 @@ function compileBone(bone) {
                 continue;
             }
 
-            children[node.name] = compileBone(node);
+            children[node.name] = compileBone(node, bOrigin);
         }
         if (node instanceof Cube) {
             if (node.parent !== bone) {
@@ -199,7 +193,7 @@ function compileBone(bone) {
             let from = node.from;
             let size = [to[0] - from[0], to[1] - from[1], to[2] - from[2]];
             let pos = flipY([from[0], from[1] + size[1], from[2]]);
-            cuboid.offset = [pos[0] - origin[0], pos[1] - origin[1], pos[2] - origin[2]];
+            cuboid.offset = [pos[0] - bOrigin[0], pos[1] - bOrigin[1], pos[2] - bOrigin[2]];
             cuboid.dimensions = size;
             cuboid.uv = node.uv_offset;
 
