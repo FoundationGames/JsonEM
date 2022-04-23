@@ -17,14 +17,14 @@ import java.util.Map;
 
 @Mixin(EntityModels.class)
 public class EntityModelsMixin {
-    @Inject(method = "getModels", at = @At(value = "INVOKE", target = "Lcom/google/common/collect/ImmutableMap$Builder;build()Lcom/google/common/collect/ImmutableMap;"), locals = LocalCapture.CAPTURE_FAILSOFT)
-    private static void jsonem$dumpModels(CallbackInfoReturnable<Map<EntityModelLayer, TexturedModelData>> cir, ImmutableMap.Builder<EntityModelLayer, TexturedModelData> builder) {
+    @Inject(method = "getModels", at = @At(value = "INVOKE", target = "Ljava/util/stream/Stream;filter(Ljava/util/function/Predicate;)Ljava/util/stream/Stream;"), locals = LocalCapture.CAPTURE_FAILSOFT)
+    private static void jsonem$dumpModels(CallbackInfoReturnable<Map<EntityModelLayer, TexturedModelData>> cir, ImmutableMap.Builder<EntityModelLayer, TexturedModelData> layers) {
         if ("true".equals(JsonEM.CONFIG.values.getProperty("dump_models"))) {
-            builder.build().forEach((layer, data) -> {
+            layers.build().forEach((layer, data) -> {
                 try {
                     JsonEntityModelUtil.dump(layer, data);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    JsonEM.LOG.error(e);
                 }
             });
         }

@@ -79,9 +79,13 @@ Plugin.register("jsonem_models", {
     author: "FoundationGames",
     description: "Create models to be used with https://github.com/FoundationGames/JsonEM",
     icon: "icon-format_java",
-    version: "1.3",
+    version: "1.4",
     variant: "both"
 })
+
+function flipCoords(vec) {
+    return [-vec[0], -vec[1], vec[2]];
+}
 
 function flipY(vec) {
     return [vec[0], -vec[1], vec[2]];
@@ -107,10 +111,10 @@ function addBone(parent, pOrigin, key, bone) {
         }
         if ("rotation" in bone.transform) {
             let rot = bone.transform.rotation;
-            gopts.rotation = [-Math.radToDeg(rot[0]), Math.radToDeg(rot[1]), -Math.radToDeg(rot[2])];
+            gopts.rotation = [-Math.radToDeg(rot[0]), -Math.radToDeg(rot[1]), Math.radToDeg(rot[2])];
         }
     }
-    gopts.origin = flipY(origin);
+    gopts.origin = flipCoords(origin);
 
     let group = new Group(gopts);
 
@@ -132,12 +136,12 @@ function addBone(parent, pOrigin, key, bone) {
         if ("mirror" in cuboid) {
             copts.mirror_uv = cuboid.mirror;
         }
-        
+
         let pos = cuboid.offset;
         pos = [pos[0] + origin[0], pos[1] + origin[1], pos[2] + origin[2]]
         let size = cuboid.dimensions;
-        copts.from = flipY([pos[0], pos[1] + size[1], pos[2]]);
-        copts.to = flipY([pos[0] + size[0], pos[1], pos[2] + size[2]]);
+        copts.to = flipCoords([pos[0], pos[1], pos[2] + size[2]]);
+        copts.from = flipCoords([pos[0] + size[0], pos[1] + size[1], pos[2]]);
 
         copts.uv_offset = cuboid.uv;
 
@@ -152,7 +156,7 @@ function addBone(parent, pOrigin, key, bone) {
 function compileBone(bone, pOrigin) {
     let compiled = {};
 
-    let bOrigin = flipY(bone.origin); // bone origin
+    let bOrigin = flipCoords(bone.origin); // bone origin
     let origin = [bOrigin[0] - pOrigin[0], bOrigin[1] - pOrigin[1], bOrigin[2] - pOrigin[2]]; // origin to write to json
 
     if (!isZero(origin)) {
@@ -161,7 +165,7 @@ function compileBone(bone, pOrigin) {
     }
 
     let brot = bone.rotation;
-    let rotation = [Math.degToRad(-brot[0]), Math.degToRad(brot[1]), Math.degToRad(-brot[2])];
+    let rotation = [Math.degToRad(-brot[0]), Math.degToRad(-brot[1]), Math.degToRad(brot[2])];
     if (!isZero(rotation)) {
         if (!("transform" in compiled)) compiled.transform = {};
         compiled.transform.rotation = rotation;
@@ -191,8 +195,10 @@ function compileBone(bone, pOrigin) {
 
             let to = node.to;
             let from = node.from;
+
             let size = [to[0] - from[0], to[1] - from[1], to[2] - from[2]];
-            let pos = flipY([from[0], from[1] + size[1], from[2]]);
+            let pos = flipCoords([from[0] + size[0], from[1] + size[1], from[2]]);
+
             cuboid.offset = [pos[0] - bOrigin[0], pos[1] - bOrigin[1], pos[2] - bOrigin[2]];
             cuboid.dimensions = size;
             cuboid.uv = node.uv_offset;
