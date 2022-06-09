@@ -38,10 +38,11 @@ public final class JsonEntityModelUtil {
         EntityModelLayers.getLayers().forEach(layer -> {
             var modelLoc = new Identifier(layer.getId().getNamespace(), "models/entity/"+layer.getId().getPath()+"/"+layer.getName()+".json");
 
-            if (manager.containsResource(modelLoc)) {
+            var res = manager.getResource(modelLoc);
+
+            if (res.isPresent()) {
                 try {
-                    var res = manager.getResource(modelLoc);
-                    try (var in = res.getInputStream()) {
+                    try (var in = res.get().getInputStream()) {
                         var data = JsonEntityModelUtil.readJson(in);
                         data.ifPresent(model -> models.put(layer, model));
                     }
