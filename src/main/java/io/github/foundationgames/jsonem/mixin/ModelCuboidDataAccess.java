@@ -33,9 +33,7 @@ public interface ModelCuboidDataAccess {
     Vector2f jsonem$uvScale();
 
     @Invoker("<init>")
-    static ModelCuboidData jsonem$create(@Nullable String name, float textureX, float textureY, float offsetX,
-            float offsetY, float offsetZ, float sizeX, float sizeY, float sizeZ, Dilation extra, boolean mirror,
-            float textureScaleX, float textureScaleY) {
+    static ModelCuboidData jsonem$create(@Nullable String name, float textureX, float textureY, float offsetX, float offsetY, float offsetZ, float sizeX, float sizeY, float sizeZ, Dilation extra, boolean mirror, float textureScaleX, float textureScaleY) {
         throw new AssertionError("mixin broke");
     }
 }
