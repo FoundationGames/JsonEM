@@ -3,8 +3,8 @@ package io.github.foundationgames.jsonem.mixin;
 import net.minecraft.client.model.Dilation;
 import net.minecraft.client.model.ModelCuboidData;
 import net.minecraft.client.util.math.Vector2f;
-import net.minecraft.util.math.Vec3f;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Vector3f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
@@ -15,10 +15,10 @@ public interface ModelCuboidDataAccess {
     String jsonem$name();
 
     @Accessor("offset")
-    Vec3f jsonem$offset();
+    Vector3f jsonem$offset();
 
     @Accessor("dimensions")
-    Vec3f jsonem$dimensions();
+    Vector3f jsonem$dimensions();
 
     @Accessor("extraSize")
     Dilation jsonem$dilation();
