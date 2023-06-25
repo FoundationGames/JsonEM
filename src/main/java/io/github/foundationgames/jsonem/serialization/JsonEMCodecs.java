@@ -18,20 +18,24 @@ import net.minecraft.client.model.TextureDimensions;
 import net.minecraft.client.model.TexturedModelData;
 import net.minecraft.client.util.math.Vector2f;
 import net.minecraft.util.Util;
+import net.minecraft.util.math.Direction;
 import org.joml.Vector3f;
 
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.Set;
 
 public class JsonEMCodecs {
+    private static final Set<Direction> ALL_DIRECTIONS = EnumSet.allOf(Direction.class);
+
     public static final Codec<Vector2f> VECTOR2F = Codec.FLOAT.listOf().comapFlatMap((vec) ->
-            Util.toArray(vec, 2).map((arr) -> new Vector2fComparable(arr.get(0), arr.get(1))),
+            Util.decodeFixedLengthList(vec, 2).map((arr) -> new Vector2fComparable(arr.get(0), arr.get(1))),
             (vec) -> ImmutableList.of(vec.getX(), vec.getY())
     );
 
-
     public static final Codec<Vector3f> VECTOR3F = Codec.FLOAT.listOf().comapFlatMap((vec) ->
-            Util.toArray(vec, 3).map(coords -> new Vector3f(coords.get(0), coords.get(1), coords.get(2))),
+            Util.decodeFixedLengthList(vec, 3).map(coords -> new Vector3f(coords.get(0), coords.get(1), coords.get(2))),
             (vec) -> ImmutableList.of(vec.x, vec.y, vec.z)
     );
 
@@ -58,7 +62,7 @@ public class JsonEMCodecs {
     );
 
     private static ModelCuboidData createCuboidData(Optional<String> name, Vector3f offset, Vector3f dimensions, Dilation dilation, boolean mirror, Vector2f uv, Vector2f uvSize) {
-        return ModelCuboidDataAccess.jsonem$create(name.orElse(null), uv.getX(), uv.getY(), offset.x, offset.y, offset.z, dimensions.x, dimensions.y, dimensions.z, dilation, mirror, uvSize.getX(), uvSize.getY());
+        return ModelCuboidDataAccess.jsonem$create(name.orElse(null), uv.getX(), uv.getY(), offset.x, offset.y, offset.z, dimensions.x, dimensions.y, dimensions.z, dilation, mirror, uvSize.getX(), uvSize.getY(), ALL_DIRECTIONS);
     }
 
     private static final Vector2f DEFAULT_UV_SCALE = new Vector2fComparable(1.0f, 1.0f);
