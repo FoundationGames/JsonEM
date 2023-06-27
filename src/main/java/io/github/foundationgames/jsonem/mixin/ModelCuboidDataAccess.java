@@ -4,6 +4,7 @@ import net.minecraft.client.model.Dilation;
 import net.minecraft.client.model.ModelCuboidData;
 import net.minecraft.client.util.math.Vector2f;
 import net.minecraft.util.math.Direction;
+
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 import org.spongepowered.asm.mixin.Mixin;

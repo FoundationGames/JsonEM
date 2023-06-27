@@ -32,7 +32,7 @@ public class JsonEMCodecs {
     private static final Set<Direction> ALL_DIRECTIONS = EnumSet.allOf(Direction.class);
 
     public static final Codec<Vector2f> VECTOR2F = Codec.FLOAT.listOf().comapFlatMap((vec) ->
-            Util.toArray(vec, 2).map((arr) -> new Vector2fComparable(arr.get(0), arr.get(1))),
+            Util.decodeFixedLengthList(vec, 2).map((arr) -> new Vector2fComparable(arr.get(0), arr.get(1))),
             (vec) -> ImmutableList.of(vec.getX(), vec.getY())
     );
 
