@@ -19,12 +19,18 @@ import net.minecraft.client.model.TexturedModelData;
 import net.minecraft.client.util.math.Vector2f;
 import net.minecraft.util.Util;
 import net.minecraft.util.dynamic.Codecs;
+import net.minecraft.util.math.Direction;
 import org.joml.Vector3f;
 
+import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public class JsonEMCodecs {
+    private static final Set<Direction> ALL_DIRECTIONS = EnumSet.allOf(Direction.class);
+
     public static final Codec<Vector2f> VECTOR2F = Codec.FLOAT.listOf().comapFlatMap((vec) ->
             Util.toArray(vec, 2).map((arr) -> new Vector2fComparable(arr.get(0), arr.get(1))),
             (vec) -> ImmutableList.of(vec.getX(), vec.getY())
@@ -52,8 +58,25 @@ public class JsonEMCodecs {
                     ((DilationAccess) dil).jsonem$radiusZ())
     );
 
-    private static ModelCuboidData createCuboidData(Optional<String> name, Vector3f offset, Vector3f dimensions, Dilation dilation, boolean mirror, Vector2f uv, Vector2f uvSize) {
-        return ModelCuboidDataAccess.jsonem$create(name.orElse(null), uv.getX(), uv.getY(), offset.x(), offset.y(), offset.z(), dimensions.x(), dimensions.y(), dimensions.z(), dilation, mirror, uvSize.getX(), uvSize.getY());
+    private static ModelCuboidData createCuboidData(Optional<String> name, Vector3f offset, Vector3f dimensions, Dilation dilation, boolean mirror, Vector2f uv, Vector2f uvSize, Optional<List<Direction>> faces) {
+        return ModelCuboidDataAccess.jsonem$create(name.orElse(null),
+                uv.getX(), uv.getY(),
+                offset.x(), offset.y(), offset.z(),
+                dimensions.x(), dimensions.y(), dimensions.z(),
+                dilation, mirror,
+                uvSize.getX(), uvSize.getY(),
+                faces.map(Set::copyOf).orElse(ALL_DIRECTIONS));
+    }
+
+    // If the set has all faces, return empty
+    private static Optional<List<Direction>> optionalFaceList(Set<Direction> faces) {
+        for (Direction direction : Direction.values()) {
+            if (!faces.contains(direction)) {
+                return Optional.of(List.copyOf(faces));
+            }
+        }
+
+        return Optional.empty();
     }
 
     private static final Vector2f DEFAULT_UV_SCALE = new Vector2fComparable(1.0f, 1.0f);
@@ -66,7 +89,8 @@ public class JsonEMCodecs {
                     DILATION.optionalFieldOf("dilation", Dilation.NONE).forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$dilation()),
                     Codec.BOOL.optionalFieldOf("mirror", false).forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$mirror()),
                     VECTOR2F.fieldOf("uv").forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$uv()),
-                    VECTOR2F.optionalFieldOf("uv_scale", DEFAULT_UV_SCALE).forGetter(obj -> Vector2fComparable.of(((ModelCuboidDataAccess)(Object)obj).jsonem$uvScale()))
+                    VECTOR2F.optionalFieldOf("uv_scale", DEFAULT_UV_SCALE).forGetter(obj -> Vector2fComparable.of(((ModelCuboidDataAccess)(Object)obj).jsonem$uvScale())),
+                    Codec.list(Direction.CODEC).optionalFieldOf("faces").forGetter(obj -> optionalFaceList(((ModelCuboidDataAccess)(Object)obj).jsonem$faces()))
             ).apply(instance, JsonEMCodecs::createCuboidData)
     );
 

@@ -13,16 +13,20 @@ import net.minecraft.client.render.entity.model.EntityModelLayer;
 import net.minecraft.client.render.entity.model.EntityModelLayers;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Direction;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 public final class JsonEntityModelUtil {
+
     public static final Path DUMP_DIR = FabricLoader.getInstance().getGameDir().resolve("jsonem_dump");
     public static final Gson GSON = new Gson();
 
