@@ -25,6 +25,11 @@ import java.util.HashMap;
 import java.util.Optional;
 
 public class JsonEMCodecs {
+    public static final Codec<Vector2f> VECTOR2F = Codec.FLOAT.listOf().comapFlatMap((vec) ->
+            Util.toArray(vec, 2).map((arr) -> new Vector2fComparable(arr.get(0), arr.get(1))),
+            (vec) -> ImmutableList.of(vec.getX(), vec.getY())
+    );
+
     public static final Codec<TextureDimensions> TEXTURE_DIMENSIONS = RecordCodecBuilder.create((instance) ->
         instance.group(
                 Codec.INT.fieldOf("width").forGetter(obj -> ((TextureDimensionsAccess) obj).jsonem$width()),
@@ -45,11 +50,6 @@ public class JsonEMCodecs {
                     ((DilationAccess) dil).jsonem$radiusX(),
                     ((DilationAccess) dil).jsonem$radiusY(),
                     ((DilationAccess) dil).jsonem$radiusZ())
-    );
-
-    public static final Codec<Vector2f> VECTOR2F = Codec.FLOAT.listOf().comapFlatMap((vec) ->
-            Util.toArray(vec, 2).map((arr) -> new Vector2fComparable(arr.get(0), arr.get(1))),
-            (vec) -> ImmutableList.of(vec.getX(), vec.getY())
     );
 
     private static ModelCuboidData createCuboidData(Optional<String> name, Vector3f offset, Vector3f dimensions, Dilation dilation, boolean mirror, Vector2f uv, Vector2f uvSize) {
