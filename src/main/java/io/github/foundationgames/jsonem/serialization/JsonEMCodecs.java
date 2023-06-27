@@ -18,11 +18,13 @@ import net.minecraft.client.model.TextureDimensions;
 import net.minecraft.client.model.TexturedModelData;
 import net.minecraft.client.util.math.Vector2f;
 import net.minecraft.util.Util;
+import net.minecraft.util.dynamic.Codecs;
 import net.minecraft.util.math.Direction;
 import org.joml.Vector3f;
 
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -34,11 +36,6 @@ public class JsonEMCodecs {
             (vec) -> ImmutableList.of(vec.getX(), vec.getY())
     );
 
-    public static final Codec<Vector3f> VECTOR3F = Codec.FLOAT.listOf().comapFlatMap((vec) ->
-            Util.decodeFixedLengthList(vec, 3).map(coords -> new Vector3f(coords.get(0), coords.get(1), coords.get(2))),
-            (vec) -> ImmutableList.of(vec.x, vec.y, vec.z)
-    );
-
     public static final Codec<TextureDimensions> TEXTURE_DIMENSIONS = RecordCodecBuilder.create((instance) ->
         instance.group(
                 Codec.INT.fieldOf("width").forGetter(obj -> ((TextureDimensionsAccess) obj).jsonem$width()),
@@ -48,21 +45,38 @@ public class JsonEMCodecs {
 
     public static final Codec<ModelTransform> MODEL_TRANSFORM = RecordCodecBuilder.create((instance) ->
             instance.group(
-                    VECTOR3F.optionalFieldOf("origin", new Vector3f()).forGetter(obj -> new Vector3f(obj.pivotX, obj.pivotY, obj.pivotZ)),
-                    VECTOR3F.optionalFieldOf("rotation", new Vector3f()).forGetter(obj -> new Vector3f(obj.pitch, obj.yaw, obj.roll))
-            ).apply(instance, (origin, rot) -> ModelTransform.of(origin.x, origin.y, origin.z, rot.x, rot.y, rot.z))
+                    Codecs.VECTOR_3F.optionalFieldOf("origin", new Vector3f(0)).forGetter(obj -> new Vector3f(obj.pivotX, obj.pivotY, obj.pivotZ)),
+                    Codecs.VECTOR_3F.optionalFieldOf("rotation", new Vector3f(0)).forGetter(obj -> new Vector3f(obj.pitch, obj.yaw, obj.roll))
+            ).apply(instance, (origin, rot) -> ModelTransform.of(origin.x(), origin.y(), origin.z(), rot.x(), rot.y(), rot.z()))
     );
 
-    public static final Codec<Dilation> DILATION = VECTOR3F.xmap(
-            vec -> new Dilation(vec.x, vec.y, vec.z),
+    public static final Codec<Dilation> DILATION = Codecs.VECTOR_3F.xmap(
+            vec -> new Dilation(vec.x(), vec.y(), vec.z()),
             dil -> new Vector3f(
                     ((DilationAccess) dil).jsonem$radiusX(),
                     ((DilationAccess) dil).jsonem$radiusY(),
                     ((DilationAccess) dil).jsonem$radiusZ())
     );
 
-    private static ModelCuboidData createCuboidData(Optional<String> name, Vector3f offset, Vector3f dimensions, Dilation dilation, boolean mirror, Vector2f uv, Vector2f uvSize) {
-        return ModelCuboidDataAccess.jsonem$create(name.orElse(null), uv.getX(), uv.getY(), offset.x, offset.y, offset.z, dimensions.x, dimensions.y, dimensions.z, dilation, mirror, uvSize.getX(), uvSize.getY(), ALL_DIRECTIONS);
+    private static ModelCuboidData createCuboidData(Optional<String> name, Vector3f offset, Vector3f dimensions, Dilation dilation, boolean mirror, Vector2f uv, Vector2f uvSize, Optional<List<Direction>> faces) {
+        return ModelCuboidDataAccess.jsonem$create(name.orElse(null),
+                uv.getX(), uv.getY(),
+                offset.x(), offset.y(), offset.z(),
+                dimensions.x(), dimensions.y(), dimensions.z(),
+                dilation, mirror,
+                uvSize.getX(), uvSize.getY(),
+                faces.map(Set::copyOf).orElse(ALL_DIRECTIONS));
+    }
+
+    // If the set has all faces, return empty
+    private static Optional<List<Direction>> optionalFaceList(Set<Direction> faces) {
+        for (Direction direction : Direction.values()) {
+            if (!faces.contains(direction)) {
+                return Optional.of(List.copyOf(faces));
+            }
+        }
+
+        return Optional.empty();
     }
 
     private static final Vector2f DEFAULT_UV_SCALE = new Vector2fComparable(1.0f, 1.0f);
@@ -70,12 +84,13 @@ public class JsonEMCodecs {
     public static final Codec<ModelCuboidData> MODEL_CUBOID_DATA = RecordCodecBuilder.create((instance) ->
             instance.group(
                     Codec.STRING.optionalFieldOf("name").forGetter(obj -> Optional.ofNullable(((ModelCuboidDataAccess) (Object) obj).jsonem$name())),
-                    VECTOR3F.fieldOf("offset").forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$offset()),
-                    VECTOR3F.fieldOf("dimensions").forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$dimensions()),
+                    Codecs.VECTOR_3F.fieldOf("offset").forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$offset()),
+                    Codecs.VECTOR_3F.fieldOf("dimensions").forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$dimensions()),
                     DILATION.optionalFieldOf("dilation", Dilation.NONE).forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$dilation()),
                     Codec.BOOL.optionalFieldOf("mirror", false).forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$mirror()),
                     VECTOR2F.fieldOf("uv").forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$uv()),
-                    VECTOR2F.optionalFieldOf("uv_scale", DEFAULT_UV_SCALE).forGetter(obj -> Vector2fComparable.of(((ModelCuboidDataAccess)(Object)obj).jsonem$uvScale()))
+                    VECTOR2F.optionalFieldOf("uv_scale", DEFAULT_UV_SCALE).forGetter(obj -> Vector2fComparable.of(((ModelCuboidDataAccess)(Object)obj).jsonem$uvScale())),
+                    Codec.list(Direction.CODEC).optionalFieldOf("faces").forGetter(obj -> optionalFaceList(((ModelCuboidDataAccess)(Object)obj).jsonem$faces()))
             ).apply(instance, JsonEMCodecs::createCuboidData)
     );
 
