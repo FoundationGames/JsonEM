@@ -37,7 +37,7 @@ public final class JsonEntityModelUtil {
 
     public static void loadModels(ResourceManager manager, Map<EntityModelLayer, TexturedModelData> models) {
         EntityModelLayers.getLayers().forEach(layer -> {
-            var modelLoc = new Identifier(layer.getId().getNamespace(), "models/entity/"+layer.getId().getPath()+"/"+layer.getName()+".json");
+            var modelLoc = Identifier.of(layer.getId().getNamespace(), "models/entity/"+layer.getId().getPath()+"/"+layer.getName()+".json");
 
             var res = manager.getResource(modelLoc);
 
