@@ -13,17 +13,14 @@ import net.minecraft.client.render.entity.model.EntityModelLayer;
 import net.minecraft.client.render.entity.model.EntityModelLayers;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Direction;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.EnumSet;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 public final class JsonEntityModelUtil {
 
@@ -70,11 +67,11 @@ public final class JsonEntityModelUtil {
             Files.createDirectories(modelFolder);
         }
 
-        var element = modelResult.get().left();
-        if (element.isPresent()) {
+        if (modelResult.isSuccess()) {
+            var element = modelResult.getOrThrow();
             var writer = GSON.newJsonWriter(Files.newBufferedWriter(modelFile));
             writer.setIndent("    ");
-            GSON.toJson(element.get(), writer);
+            GSON.toJson(element, writer);
 
             writer.close();
         }

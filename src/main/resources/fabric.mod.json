@@ -30,6 +30,6 @@
     "fabricloader": "*",
     "fabric-api": "*",
     "minecraft": "*",
-    "java": ">=17"
+    "java": ">=21"
   }
 }
