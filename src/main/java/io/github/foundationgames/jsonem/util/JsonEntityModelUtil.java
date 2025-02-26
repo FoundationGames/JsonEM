@@ -10,9 +10,10 @@ import io.github.foundationgames.jsonem.serialization.JsonEMCodecs;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.model.TexturedModelData;
 import net.minecraft.client.render.entity.model.EntityModelLayer;
-import net.minecraft.client.render.entity.model.EntityModelLayers;
+import net.minecraft.resource.ResourceFinder;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.InvalidIdentifierException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,20 +37,25 @@ public final class JsonEntityModelUtil {
     }
 
     public static void loadModels(ResourceManager manager, Map<EntityModelLayer, TexturedModelData> models) {
-        EntityModelLayers.getLayers().forEach(layer -> {
-            var modelLoc = Identifier.of(layer.getId().getNamespace(), "models/entity/"+layer.getId().getPath()+"/"+layer.getName()+".json");
+        ResourceFinder.json("models/entity").findResources(manager).forEach((id, res) -> {
+            try {
+                var fullPath = id.getPath().replaceFirst("models/entity/", "");
+                var splitPath = fullPath.split("/");
 
-            var res = manager.getResource(modelLoc);
+                var dirs = new String[splitPath.length - 1];
+                System.arraycopy(splitPath, 0, dirs, 0, dirs.length);
 
-            if (res.isPresent()) {
-                try {
-                    try (var in = res.get().getInputStream()) {
-                        var data = JsonEntityModelUtil.readJson(in);
-                        data.ifPresent(model -> models.put(layer, model));
-                    }
-                } catch (IOException e) {
-                    JsonEM.LOG.error(e);
+                var layerName = splitPath[splitPath.length - 1].replace(".json", "");
+                var modelName = String.join("/", dirs);
+
+                var layer = new EntityModelLayer(Identifier.of(id.getNamespace(), modelName), layerName);
+
+                try (var in = res.getInputStream()) {
+                    var data = JsonEntityModelUtil.readJson(in);
+                    data.ifPresent(model -> models.put(layer, model));
                 }
+            } catch (IOException | InvalidIdentifierException e) {
+                JsonEM.LOG.error(e);
             }
         });
     }

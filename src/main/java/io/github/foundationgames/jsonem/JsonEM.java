@@ -18,6 +18,7 @@ public class JsonEM implements ClientModInitializer {
         CONFIG.load();
     }
 
+    @Deprecated
     public static void registerModelLayer(EntityModelLayer layer) {
         EntityModelLayerRegistry.registerModelLayer(layer, () -> TexturedModelData.of(new ModelData(), 32, 32));
     }
