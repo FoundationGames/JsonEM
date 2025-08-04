@@ -94,21 +94,16 @@ public class JsonEMCodecs {
             ).apply(instance, JsonEMCodecs::createCuboidData)
     );
 
-    private static Codec<ModelPartData> createPartDataCodec() {
-        return RecordCodecBuilder.create((instance) ->
-                instance.group(
-                        MODEL_TRANSFORM.optionalFieldOf("transform", ModelTransform.NONE).forGetter(obj -> ((ModelPartDataAccess) obj).jsonem$transform()),
-                        Codec.list(MODEL_CUBOID_DATA).fieldOf("cuboids").forGetter(obj -> ((ModelPartDataAccess) obj).jsonem$cuboids()),
-                        LazyTypeUnboundedMapCodec.of(Codec.STRING, JsonEMCodecs::createPartDataCodec).optionalFieldOf("children", new HashMap<>()).forGetter(obj -> ((ModelPartDataAccess) obj).jsonem$children())
-                ).apply(instance, (transform, cuboids, children) -> {
-                    var data = ModelPartDataAccess.create(cuboids, transform);
-                    ((ModelPartDataAccess) data).jsonem$children().putAll(children);
-                    return data;
-                })
-        );
-    }
-
-    public static final Codec<ModelPartData> MODEL_PART_DATA = createPartDataCodec();
+    public static final Codec<ModelPartData> MODEL_PART_DATA = Codec.recursive("JsonEM Model Part Data", self ->
+        RecordCodecBuilder.create(i -> i.group(
+            MODEL_TRANSFORM.optionalFieldOf("transform", ModelTransform.NONE).forGetter(obj -> ((ModelPartDataAccess) obj).jsonem$transform()),
+            Codec.list(MODEL_CUBOID_DATA).fieldOf("cuboids").forGetter(obj -> ((ModelPartDataAccess) obj).jsonem$cuboids()),
+            Codec.unboundedMap(Codec.STRING, self).optionalFieldOf("children", new HashMap<>()).forGetter(obj -> ((ModelPartDataAccess) obj).jsonem$children())
+        ).apply(i, (transform, cuboids, children) -> {
+            var data = ModelPartDataAccess.create(cuboids, transform);
+            ((ModelPartDataAccess) data).jsonem$children().putAll(children);
+            return data;
+        })));
 
     public static final Codec<TexturedModelData> TEXTURED_MODEL_DATA = RecordCodecBuilder.create((instance) ->
             instance.group(
