@@ -45,8 +45,8 @@ public class JsonEMCodecs {
 
     public static final Codec<ModelTransform> MODEL_TRANSFORM = RecordCodecBuilder.create((instance) ->
             instance.group(
-                    Codecs.VECTOR_3F.optionalFieldOf("origin", new Vector3f(0)).forGetter(obj -> new Vector3f(obj.pivotX, obj.pivotY, obj.pivotZ)),
-                    Codecs.VECTOR_3F.optionalFieldOf("rotation", new Vector3f(0)).forGetter(obj -> new Vector3f(obj.pitch, obj.yaw, obj.roll))
+                    Codecs.VECTOR_3F.optionalFieldOf("origin", new Vector3f(0)).forGetter(obj -> new Vector3f(obj.x(), obj.y(), obj.z())),
+                    Codecs.VECTOR_3F.optionalFieldOf("rotation", new Vector3f(0)).forGetter(obj -> new Vector3f(obj.pitch(), obj.yaw(), obj.roll()))
             ).apply(instance, (origin, rot) -> ModelTransform.of(origin.x(), origin.y(), origin.z(), rot.x(), rot.y(), rot.z()))
     );
 

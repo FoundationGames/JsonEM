@@ -4,9 +4,10 @@
   "package": "io.github.foundationgames.jsonem.mixin",
   "compatibilityLevel": "JAVA_17",
   "client": [
+    "BakedModelManagerMixin",
     "DilationAccess",
-    "EntityModelLoaderMixin",
     "EntityModelsMixin",
+    "LoadedEntityModelsAccess",
     "ModelCuboidDataAccess",
     "ModelPartDataAccess",
     "TextureDimensionsAccess",
