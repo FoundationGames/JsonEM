@@ -66,8 +66,8 @@ public final class JsonEntityModelUtil {
         }
 
         var modelResult = JsonEMCodecs.TEXTURED_MODEL_DATA.encode(data, JsonOps.INSTANCE, new JsonObject());
-        var modelFolder = DUMP_DIR.resolve("assets").resolve(layer.getId().getNamespace()).resolve("models").resolve("entity").resolve(layer.getId().getPath());
-        var modelFile = modelFolder.resolve(layer.getName()+".json");
+        var modelFolder = DUMP_DIR.resolve("assets").resolve(layer.id().getNamespace()).resolve("models").resolve("entity").resolve(layer.id().getPath());
+        var modelFile = modelFolder.resolve(layer.name()+".json");
 
         if (!Files.exists(modelFolder)) {
             Files.createDirectories(modelFolder);
