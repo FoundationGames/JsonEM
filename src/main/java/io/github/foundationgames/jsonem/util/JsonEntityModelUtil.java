@@ -8,12 +8,12 @@ import com.mojang.serialization.JsonOps;
 import io.github.foundationgames.jsonem.JsonEM;
 import io.github.foundationgames.jsonem.serialization.JsonEMCodecs;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.model.TexturedModelData;
-import net.minecraft.client.render.entity.model.EntityModelLayer;
-import net.minecraft.resource.ResourceFinder;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.InvalidIdentifierException;
+import net.minecraft.IdentifierException;
+import net.minecraft.client.model.geom.ModelLayerLocation;
+import net.minecraft.client.model.geom.builders.LayerDefinition;
+import net.minecraft.resources.FileToIdConverter;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.packs.resources.ResourceManager;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,20 +24,19 @@ import java.util.Map;
 import java.util.Optional;
 
 public final class JsonEntityModelUtil {
-
     public static final Path DUMP_DIR = FabricLoader.getInstance().getGameDir().resolve("jsonem_dump");
     public static final Gson GSON = new Gson();
 
     private JsonEntityModelUtil() {}
 
-    public static Optional<TexturedModelData> readJson(InputStream data) {
+    public static Optional<LayerDefinition> readJson(InputStream data) {
         JsonElement json = GSON.fromJson(GSON.newJsonReader(new InputStreamReader(data)), JsonObject.class);
 
-        return JsonEMCodecs.TEXTURED_MODEL_DATA.decode(JsonOps.INSTANCE, json).result().map(Pair::getFirst);
+        return JsonEMCodecs.LAYER_DEFINITION.decode(JsonOps.INSTANCE, json).result().map(Pair::getFirst);
     }
 
-    public static void loadModels(ResourceManager manager, Map<EntityModelLayer, TexturedModelData> models) {
-        ResourceFinder.json("models/entity").findResources(manager).forEach((id, res) -> {
+    public static void loadModels(ResourceManager manager, Map<ModelLayerLocation, LayerDefinition> layers) {
+        FileToIdConverter.json("models/entity").listMatchingResources(manager).forEach((id, res) -> {
             try {
                 var fullPath = id.getPath().replaceFirst("models/entity/", "");
                 var splitPath = fullPath.split("/");
@@ -48,26 +47,26 @@ public final class JsonEntityModelUtil {
                 var layerName = splitPath[splitPath.length - 1].replace(".json", "");
                 var modelName = String.join("/", dirs);
 
-                var layer = new EntityModelLayer(Identifier.of(id.getNamespace(), modelName), layerName);
+                var layer = new ModelLayerLocation(Identifier.fromNamespaceAndPath(id.getNamespace(), modelName), layerName);
 
-                try (var in = res.getInputStream()) {
+                try (var in = res.open()) {
                     var data = JsonEntityModelUtil.readJson(in);
-                    data.ifPresent(model -> models.put(layer, model));
+                    data.ifPresent(model -> layers.put(layer, model));
                 }
-            } catch (IOException | InvalidIdentifierException e) {
+            } catch (IOException | IdentifierException e) {
                 JsonEM.LOG.error(e);
             }
         });
     }
 
-    public static void dump(EntityModelLayer layer, TexturedModelData data) throws IOException {
+    public static void dump(ModelLayerLocation layer, LayerDefinition definition) throws IOException {
         if (!Files.exists(DUMP_DIR)) {
             Files.createDirectories(DUMP_DIR);
         }
 
-        var modelResult = JsonEMCodecs.TEXTURED_MODEL_DATA.encode(data, JsonOps.INSTANCE, new JsonObject());
-        var modelFolder = DUMP_DIR.resolve("assets").resolve(layer.id().getNamespace()).resolve("models").resolve("entity").resolve(layer.id().getPath());
-        var modelFile = modelFolder.resolve(layer.name()+".json");
+        var modelResult = JsonEMCodecs.LAYER_DEFINITION.encode(definition, JsonOps.INSTANCE, new JsonObject());
+        var modelFolder = DUMP_DIR.resolve("assets").resolve(layer.model().getNamespace()).resolve("models").resolve("entity").resolve(layer.model().getPath());
+        var modelFile = modelFolder.resolve(layer.layer()+".json");
 
         if (!Files.exists(modelFolder)) {
             Files.createDirectories(modelFolder);

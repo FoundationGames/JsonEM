@@ -3,24 +3,23 @@ package io.github.foundationgames.jsonem.serialization;
 import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import io.github.foundationgames.jsonem.mixin.DilationAccess;
-import io.github.foundationgames.jsonem.mixin.ModelCuboidDataAccess;
-import io.github.foundationgames.jsonem.mixin.ModelPartDataAccess;
-import io.github.foundationgames.jsonem.mixin.TextureDimensionsAccess;
-import io.github.foundationgames.jsonem.mixin.TexturedModelDataAccess;
-import io.github.foundationgames.jsonem.util.Vector2fComparable;
-import net.minecraft.client.model.Dilation;
-import net.minecraft.client.model.ModelCuboidData;
-import net.minecraft.client.model.ModelData;
-import net.minecraft.client.model.ModelPartData;
-import net.minecraft.client.model.ModelTransform;
-import net.minecraft.client.model.TextureDimensions;
-import net.minecraft.client.model.TexturedModelData;
-import net.minecraft.client.util.math.Vector2f;
+import io.github.foundationgames.jsonem.mixin.CubeDefinitionAccess;
+import io.github.foundationgames.jsonem.mixin.CubeDeformationAccess;
+import io.github.foundationgames.jsonem.mixin.LayerDefinitionAccess;
+import io.github.foundationgames.jsonem.mixin.MaterialDefinitionAccess;
+import io.github.foundationgames.jsonem.mixin.PartDefinitionAccess;
+import net.minecraft.client.model.geom.PartPose;
+import net.minecraft.client.model.geom.builders.CubeDefinition;
+import net.minecraft.client.model.geom.builders.CubeDeformation;
+import net.minecraft.client.model.geom.builders.LayerDefinition;
+import net.minecraft.client.model.geom.builders.MaterialDefinition;
+import net.minecraft.client.model.geom.builders.MeshDefinition;
+import net.minecraft.client.model.geom.builders.PartDefinition;
+import net.minecraft.client.model.geom.builders.UVPair;
+import net.minecraft.core.Direction;
 import net.minecraft.util.Util;
-import net.minecraft.util.dynamic.Codecs;
-import net.minecraft.util.math.Direction;
 import org.joml.Vector3f;
+import org.joml.Vector3fc;
 
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -31,40 +30,45 @@ import java.util.Set;
 public class JsonEMCodecs {
     private static final Set<Direction> ALL_DIRECTIONS = EnumSet.allOf(Direction.class);
 
-    public static final Codec<Vector2f> VECTOR2F = Codec.FLOAT.listOf().comapFlatMap((vec) ->
-            Util.decodeFixedLengthList(vec, 2).map((arr) -> new Vector2fComparable(arr.get(0), arr.get(1))),
-            (vec) -> ImmutableList.of(vec.getX(), vec.getY())
+    public static final Codec<UVPair> UV_PAIR = Codec.FLOAT.listOf().comapFlatMap((vec) ->
+            Util.fixedSize(vec, 2).map((arr) -> new UVPair(arr.get(0), arr.get(1))),
+            (vec) -> ImmutableList.of(vec.u(), vec.v())
     );
 
-    public static final Codec<TextureDimensions> TEXTURE_DIMENSIONS = RecordCodecBuilder.create((instance) ->
+    public static final Codec<Vector3fc> VECTOR3F = Codec.FLOAT.listOf().comapFlatMap((vec) ->
+                    Util.fixedSize(vec, 3).map(coords -> new Vector3f(coords.get(0), coords.get(1), coords.get(2))),
+            (vec) -> ImmutableList.of(vec.x(), vec.y(), vec.z())
+    );
+
+    public static final Codec<MaterialDefinition> MATERIAL_DEFINITION = RecordCodecBuilder.create((instance) ->
         instance.group(
-                Codec.INT.fieldOf("width").forGetter(obj -> ((TextureDimensionsAccess) obj).jsonem$width()),
-                Codec.INT.fieldOf("height").forGetter(obj -> ((TextureDimensionsAccess) obj).jsonem$height())
-        ).apply(instance, TextureDimensions::new)
+                Codec.INT.fieldOf("width").forGetter(obj -> ((MaterialDefinitionAccess) obj).jsonem$uSize()),
+                Codec.INT.fieldOf("height").forGetter(obj -> ((MaterialDefinitionAccess) obj).jsonem$vSize())
+        ).apply(instance, MaterialDefinition::new)
     );
 
-    public static final Codec<ModelTransform> MODEL_TRANSFORM = RecordCodecBuilder.create((instance) ->
+    public static final Codec<PartPose> PART_POSE = RecordCodecBuilder.create((instance) ->
             instance.group(
-                    Codecs.VECTOR_3F.optionalFieldOf("origin", new Vector3f(0)).forGetter(obj -> new Vector3f(obj.pivotX(), obj.pivotY(), obj.pivotZ())),
-                    Codecs.VECTOR_3F.optionalFieldOf("rotation", new Vector3f(0)).forGetter(obj -> new Vector3f(obj.pitch(), obj.yaw(), obj.roll()))
-            ).apply(instance, (origin, rot) -> ModelTransform.of(origin.x(), origin.y(), origin.z(), rot.x(), rot.y(), rot.z()))
+                    VECTOR3F.optionalFieldOf("origin", new Vector3f(0)).forGetter(obj -> new Vector3f(obj.x(), obj.y(), obj.z())),
+                    VECTOR3F.optionalFieldOf("rotation", new Vector3f(0)).forGetter(obj -> new Vector3f(obj.x(), obj.y(), obj.z()))
+            ).apply(instance, (origin, rot) -> PartPose.offsetAndRotation(origin.x(), origin.y(), origin.z(), rot.x(), rot.y(), rot.z()))
     );
 
-    public static final Codec<Dilation> DILATION = Codecs.VECTOR_3F.xmap(
-            vec -> new Dilation(vec.x(), vec.y(), vec.z()),
+    public static final Codec<CubeDeformation> CUBE_DEFORMATION = VECTOR3F.xmap(
+            vec -> new CubeDeformation(vec.x(), vec.y(), vec.z()),
             dil -> new Vector3f(
-                    ((DilationAccess) dil).jsonem$radiusX(),
-                    ((DilationAccess) dil).jsonem$radiusY(),
-                    ((DilationAccess) dil).jsonem$radiusZ())
+                    ((CubeDeformationAccess) dil).jsonem$dilateX(),
+                    ((CubeDeformationAccess) dil).jsonem$dilateY(),
+                    ((CubeDeformationAccess) dil).jsonem$dilateZ())
     );
 
-    private static ModelCuboidData createCuboidData(Optional<String> name, Vector3f offset, Vector3f dimensions, Dilation dilation, boolean mirror, Vector2f uv, Vector2f uvSize, Optional<List<Direction>> faces) {
-        return ModelCuboidDataAccess.jsonem$create(name.orElse(null),
-                uv.getX(), uv.getY(),
+    private static CubeDefinition createCubeDefinition(Optional<String> name, Vector3fc offset, Vector3fc dimensions, CubeDeformation dilation, boolean mirror, UVPair uv, UVPair uvSize, Optional<List<Direction>> faces) {
+        return CubeDefinitionAccess.jsonem$create(name.orElse(null),
+                uv.u(), uv.v(),
                 offset.x(), offset.y(), offset.z(),
                 dimensions.x(), dimensions.y(), dimensions.z(),
                 dilation, mirror,
-                uvSize.getX(), uvSize.getY(),
+                uvSize.u(), uvSize.v(),
                 faces.map(Set::copyOf).orElse(ALL_DIRECTIONS));
     }
 
@@ -79,40 +83,40 @@ public class JsonEMCodecs {
         return Optional.empty();
     }
 
-    private static final Vector2f DEFAULT_UV_SCALE = new Vector2fComparable(1.0f, 1.0f);
+    private static final UVPair DEFAULT_UV_SCALE = new UVPair(1.0f, 1.0f);
 
-    public static final Codec<ModelCuboidData> MODEL_CUBOID_DATA = RecordCodecBuilder.create((instance) ->
+    public static final Codec<CubeDefinition> CUBE_DEFINITION = RecordCodecBuilder.create((instance) ->
             instance.group(
-                    Codec.STRING.optionalFieldOf("name").forGetter(obj -> Optional.ofNullable(((ModelCuboidDataAccess) (Object) obj).jsonem$name())),
-                    Codecs.VECTOR_3F.fieldOf("offset").forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$offset()),
-                    Codecs.VECTOR_3F.fieldOf("dimensions").forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$dimensions()),
-                    DILATION.optionalFieldOf("dilation", Dilation.NONE).forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$dilation()),
-                    Codec.BOOL.optionalFieldOf("mirror", false).forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$mirror()),
-                    VECTOR2F.fieldOf("uv").forGetter(obj -> ((ModelCuboidDataAccess)(Object)obj).jsonem$uv()),
-                    VECTOR2F.optionalFieldOf("uv_scale", DEFAULT_UV_SCALE).forGetter(obj -> Vector2fComparable.of(((ModelCuboidDataAccess)(Object)obj).jsonem$uvScale())),
-                    Codec.list(Direction.CODEC).optionalFieldOf("faces").forGetter(obj -> optionalFaceList(((ModelCuboidDataAccess)(Object)obj).jsonem$faces()))
-            ).apply(instance, JsonEMCodecs::createCuboidData)
+                    Codec.STRING.optionalFieldOf("name").forGetter(obj -> Optional.ofNullable(((CubeDefinitionAccess) (Object) obj).jsonem$name())),
+                    VECTOR3F.fieldOf("offset").forGetter(obj -> ((CubeDefinitionAccess)(Object)obj).jsonem$offset()),
+                    VECTOR3F.fieldOf("dimensions").forGetter(obj -> ((CubeDefinitionAccess)(Object)obj).jsonem$dimensions()),
+                    CUBE_DEFORMATION.optionalFieldOf("dilation", CubeDeformation.NONE).forGetter(obj -> ((CubeDefinitionAccess)(Object)obj).jsonem$dilation()),
+                    Codec.BOOL.optionalFieldOf("mirror", false).forGetter(obj -> ((CubeDefinitionAccess)(Object)obj).jsonem$mirror()),
+                    UV_PAIR.fieldOf("uv").forGetter(obj -> ((CubeDefinitionAccess)(Object)obj).jsonem$uv()),
+                    UV_PAIR.optionalFieldOf("uv_scale", DEFAULT_UV_SCALE).forGetter(obj -> ((CubeDefinitionAccess)(Object)obj).jsonem$uvScale()),
+                    Codec.list(Direction.CODEC).optionalFieldOf("faces").forGetter(obj -> optionalFaceList(((CubeDefinitionAccess)(Object)obj).jsonem$faces()))
+            ).apply(instance, JsonEMCodecs::createCubeDefinition)
     );
 
-    public static final Codec<ModelPartData> MODEL_PART_DATA = Codec.recursive("JsonEM Model Part Data", self ->
+    public static final Codec<PartDefinition> PART_DEFINITION = Codec.recursive("JsonEM Model Part Definition", self ->
         RecordCodecBuilder.create(i -> i.group(
-            MODEL_TRANSFORM.optionalFieldOf("transform", ModelTransform.NONE).forGetter(obj -> ((ModelPartDataAccess) obj).jsonem$transform()),
-            Codec.list(MODEL_CUBOID_DATA).fieldOf("cuboids").forGetter(obj -> ((ModelPartDataAccess) obj).jsonem$cuboids()),
-            Codec.unboundedMap(Codec.STRING, self).optionalFieldOf("children", new HashMap<>()).forGetter(obj -> ((ModelPartDataAccess) obj).jsonem$children())
+            PART_POSE.optionalFieldOf("transform", PartPose.ZERO).forGetter(obj -> ((PartDefinitionAccess) obj).jsonem$pose()),
+            Codec.list(CUBE_DEFINITION).fieldOf("cuboids").forGetter(obj -> ((PartDefinitionAccess) obj).jsonem$cuboids()),
+            Codec.unboundedMap(Codec.STRING, self).optionalFieldOf("children", new HashMap<>()).forGetter(obj -> ((PartDefinitionAccess) obj).jsonem$children())
         ).apply(i, (transform, cuboids, children) -> {
-            var data = ModelPartDataAccess.create(cuboids, transform);
-            ((ModelPartDataAccess) data).jsonem$children().putAll(children);
+            var data = PartDefinitionAccess.create(cuboids, transform);
+            ((PartDefinitionAccess) data).jsonem$children().putAll(children);
             return data;
         })));
 
-    public static final Codec<TexturedModelData> TEXTURED_MODEL_DATA = RecordCodecBuilder.create((instance) ->
+    public static final Codec<LayerDefinition> LAYER_DEFINITION = RecordCodecBuilder.create((instance) ->
             instance.group(
-                    TEXTURE_DIMENSIONS.fieldOf("texture").forGetter(obj -> ((TexturedModelDataAccess) obj).jsonem$texture()),
-                    Codec.unboundedMap(Codec.STRING, MODEL_PART_DATA).fieldOf("bones").forGetter(obj -> ((ModelPartDataAccess) ((TexturedModelDataAccess) obj).jsonem$root().getRoot()).jsonem$children())
+                    MATERIAL_DEFINITION.fieldOf("texture").forGetter(obj -> ((LayerDefinitionAccess) obj).jsonem$texture()),
+                    Codec.unboundedMap(Codec.STRING, PART_DEFINITION).fieldOf("bones").forGetter(obj -> ((PartDefinitionAccess) ((LayerDefinitionAccess) obj).jsonem$root().getRoot()).jsonem$children())
             ).apply(instance, (texture, bones) -> {
-                var data = new ModelData();
-                ((ModelPartDataAccess) data.getRoot()).jsonem$children().putAll(bones);
-                return TexturedModelDataAccess.create(data, texture);
+                var data = new MeshDefinition();
+                ((PartDefinitionAccess) data.getRoot()).jsonem$children().putAll(bones);
+                return LayerDefinitionAccess.create(data, texture);
             })
     );
 }
