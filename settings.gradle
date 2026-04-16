@@ -9,4 +9,4 @@ pluginManagement {
     }
 }
 
-rootProject.name = 'jsonem'
+rootProject.name = archives_base_name
